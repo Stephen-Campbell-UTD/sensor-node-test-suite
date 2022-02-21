@@ -131,6 +131,15 @@ interface ADCSchemaValue {
   dBSPL: number;
 }
 
+interface PIRSchema extends UARTResponseSchema {
+  path: "PIR";
+  value: number;
+}
+
+function isPIRSchema(obj: any): obj is PIRSchema {
+  return obj.path === "PIR";
+}
+
 interface ADCSchema extends UARTResponseSchema {
   path: "ADC";
   value: ADCSchemaValue;
@@ -151,6 +160,7 @@ function isBatterySchema(obj: any): obj is BatterySchema {
 interface AppSetters {
   setADCValues: Function;
   setBatteryValue: Function;
+  setPIRValue: Function;
 }
 
 function messageHandler(message: UARTResponseSchema, setters: AppSetters) {
@@ -159,6 +169,8 @@ function messageHandler(message: UARTResponseSchema, setters: AppSetters) {
     setters.setBatteryValue(message.value);
   } else if (isADCSchema(message)) {
     setters.setADCValues(message.value);
+  } else if (isPIRSchema(message)) {
+    setters.setPIRValue(message.value);
   } else {
     console.log("INVALID MESSAGE SCHEMA", message);
   }
@@ -214,6 +226,7 @@ function App() {
   const [currentPort, setCurrentPort] = useState<SerialPort | null>(null);
   const [adcValues, setADCValues] = useState({} as ADCSchemaValue);
   const [batteryValue, setBatteryValue] = useState(null);
+  const [pirValue, setPIRValue] = useState(null);
 
   const requestPorts = useCallback(async () => {
     if (!(navigator as any).serial) {
@@ -291,6 +304,7 @@ function App() {
                 messageHandler(messageObject, {
                   setADCValues,
                   setBatteryValue,
+                  setPIRValue
                 });
               } catch {
                 console.log("Received Non-JSON message", messageToHandle);
@@ -363,6 +377,12 @@ function App() {
           </CenteredButton>
           <h3>
             Battery Voltage: {(batteryValue && `${batteryValue} V`) || "N/A V"}
+          </h3>
+          <CenteredButton onClick={() => writeToSerial("PIR")}>
+            Get PIR Value
+          </CenteredButton>
+          <h3>
+            PIR : {pirValue !== null ? pirValue : "N/A"}
           </h3>
         </FlexColumn>
       </FlexRow>
